@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 import Searchbar from './Searchbar';
@@ -9,64 +9,59 @@ import ImageGallery from './ImageGallery';
 import Button from './Button';
 import s from './App.module.css';
 
-export default class App extends Component {
-  state = {
-    query: '',
-    loader: false,
-    page: 1,
-    pictures: [],
-    loadMore: false,
-  };
+export default function App() {
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-    if (prevState.query !== query || prevState.page !== page) {
-      this.setState({ loader: true });
+  const [query, setQuery] = useState(null);
+  const [loader, setLoader] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pictures, setPictures] = useState([]);
+  const [loadMore, setLoadmore] = useState(false);
 
-      API(query, page).then(pictures => {
-        this.setState({ loader: false });
-        if (pictures.length === 0) {
+  useEffect(() => {
+    if (!query) {
+      return;
+    }
+
+    setLoader(true);
+    API(query, page)
+      .then(({ hits, totalHits }) => {
+        if (hits < 12) {
+          setLoadmore(false);
+        }
+        if (totalHits > 1) {
+          setLoadmore(true);
+        }
+        if (hits === 0) {
           return toast.error(`No pictures with name: "${query}". Please enter correct name and try again!`);
         }
-
-        this.setState(prevState => ({
-          pictures: [...prevState.pictures, ...pictures],
-          loadMore: true,
-        }));
-        if (pictures.length < 12) {
-          this.setState({
-            loadMore: false,
-          });
-        }
+        setPictures(prevState => {
+          return [...prevState, ...hits];
+        });
+      })
+      .finally(() => {
+        setLoader(false);
       });
-    }
-  }
-  handlFormSubmit = query => {
-    this.setState({ query });
-    this.defaultState();
+  }, [query, page]);
+
+  function handlFormSubmit(query) {
+    setQuery(query);
+    setPage(1);
+    setPictures([]);
   };
 
-  onClickButton = () => {
-    this.setState(prevState => {
-      return {
-        page: prevState.page + 1,
-      };
-    });
-  };
-  defaultState = () => {
-    this.setState({ page: 1, pictures: [] });
-  };
-
-  render() {
-    const { loader, pictures, loadMore } = this.state;
-    return (
-      <div className={s.App}>
-        <Searchbar onSubmit={this.handlFormSubmit} />
-        {loader && <Loader />}
-        <ImageGallery pictures={pictures}></ImageGallery>
-        {loadMore && <Button onClickButton={this.onClickButton} />}
-        <ToastContainer autoClose={3000}/>
-      </div>
-    );
+  function onClickButton() {
+    setPage(page => {
+      return page + 1;
+    })
   }
+  
+  return (
+    <div className={s.App}>
+      <Searchbar onSubmit={handlFormSubmit} />
+      {loader && <Loader />}
+      <ImageGallery pictures={pictures}></ImageGallery>
+      {loadMore && <Button onClickButton={onClickButton} />}
+      <ToastContainer autoClose={3000} />
+    </div>
+  );
 }

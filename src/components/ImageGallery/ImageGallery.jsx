@@ -1,51 +1,46 @@
 import ImageGalleryItem from 'components/ImageGalleryItem';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import s from './ImageGallery.module.css'
 import Modal from '../Modal';
 
-export default class ImageGallery extends Component {
-  state = {
-    showModal: false,
-    largeImageURL: null,
-  };
-  handleModal = largeImageURL => {
-    this.setState({
-      showModal: !this.state.showModal,
-      largeImageURL,
-    });
-  };
+export default function ImageGallery({pictures}) {
+  
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState(null);
 
-  closeModal = e => {
-    if (e.target === e.currentTarget) {
-      this.setState({ showModal: false });
-    }
-  };
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
-  handleKeyDown = e => {
+  function handleKeyDown(e) {
     if (e.code === 'Escape') {
-      this.setState({ showModal: false });
+      setShowModal(false);
     }
   };
+  
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+  }, []);
 
-  render() {
-    return (
+  function handleModal(largeImageURL) {
+    setShowModal(true);
+    setLargeImageURL(largeImageURL);
+  };
+
+  function closeModal(e) {
+    if (e.target === e.currentTarget) {
+      setShowModal(false);
+    };
+  };
+  
+  return (
       <ul className={s.ImageGallery}>
         <ImageGalleryItem
-          pictures={this.props.pictures}
-          showModal={this.handleModal}
+          pictures={pictures}
+          showModal={handleModal}
         />
-        {this.state.showModal && (
+        {showModal && (
           <Modal
-            bigPicture={this.state.largeImageURL}
-            closeModal={this.closeModal}
+            bigPicture={largeImageURL}
+            closeModal={closeModal}
           />
         )}
       </ul>
     );
   }
-}
